@@ -36,6 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'muraki',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -81,3 +82,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
 STATIC_URL = '/static/'
+
+TEMPLATE_DIRS = (
+    '/home/ubuntu/workspace/segregation/templates',
+)
+
+STATICFILES_DIRS = (
+    '/home/ubuntu/workspace/segregation/static',
+)

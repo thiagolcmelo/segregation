@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Muraki{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Indium Segregation <small>Muraki's Equations</small></h1>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <form method="post" action="/muraki/" onsubmit="return validaMuraki();">
+                {% csrf_token %}
+                <ul class="list-group">
+                    <li class="list-group-item list-group-item-success">Parameters</li>
+                    <li class="list-group-item">
+                        <label for="segregationCoefficient">Segregation Coefficient</label>
+                        <input type="text" class="form-control" name="segregationCoefficient" id="segregationCoefficient" placeholder="Segregation Coefficient">
+                    </li>
+                    <li class="list-group-item">
+                        <label for="concentration">Concentration <span class="math"><b>x</b><sub>0</sub></span></label>
+                        <input type="text" class="form-control" name="concentration" id="concentration" placeholder="Concentration">
+                    </li>
+                    <li class="list-group-item">
+                        <label>Well</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="wellAlloy">Alloy</label>
+                                <div class="input-group">
+                                    <select class="form-control math" name="wellAlloy" id="wellAlloy">
+                                        <option value="0" selected>InAs</option>
+                                        <!--<option value="1" >GaAs</option>-->
+                                    </select>
+                                </div>    
+                            </div>
+                            <div class="col-md-8">
+                                <label for="wellLength">Length</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="wellLength" id="wellLength" placeholder="Well Length">
+                                    <div class="input-group-addon">&#8491;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <label>Right Barrier</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="rightBarrierAlloy">Alloy</label>
+                                <div class="input-group">
+                                    <select class="form-control math" name="rightBarrierAlloy" id="rightBarrierAlloy">
+                                        <!--<option value="0">InAs</option>-->
+                                        <option value="1" selected>GaAs</option>
+                                    </select>
+                                </div>    
+                            </div>
+                            <div class="col-md-8">
+                                <label for="rightBarrierLength">Length</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="rightBarrierLength" id="rightBarrierLength" placeholder="Right Barrier Length">
+                                    <div class="input-group-addon">&#8491;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="list-group-item" align="right">
+                        <input type="submit" class="btn btn-primary" value="Calculate" onsubmit="return validaMuraki();">
+                    </li>
+                </ul>
+            </form>
+        </div>
+        <div class="col-md-8">
+            {% if has_image %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>In Concentration Inside</h3>
+                        <div id="concentrationInsideLoading" align="center">
+                            <i class="fa fa-refresh fa-spin fa-5x"></i>
+                        </div>
+                        <image src="" id="concentrationInsideImg" style="display: 'none'" border="0"  width="100%">
+                    </div>
+                    <div class="col-md-6">
+                        <h3>In Concentration Outside</h3>
+                        <div id="concentrationOutsideLoading" align="center">
+                            <i class="fa fa-refresh fa-spin fa-5x"></i>
+                        </div>
+                        <image src="" id="concentrationOutsideImg" style="display: 'none'" border="0"  width="100%">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h3>Energy at 2 K</h3>
+                        <div id="energy2Loading" align="center">
+                            <i class="fa fa-refresh fa-spin fa-5x"></i>
+                        </div>
+                        <image src="" id="energy2Img" style="display: 'none'" border="0"  width="100%">
+                    </div>
+                    <div class="col-md-4">
+                        <h3>Energy at 77 K</h3>
+                        <div id="energy77Loading" align="center">
+                            <i class="fa fa-refresh fa-spin fa-5x"></i>
+                        </div>
+                        <image src="" id="energy77Img" style="display: 'none'" border="0"  width="100%">
+                    </div>
+                    <div class="col-md-4">
+                        <h3>Energy at 300 K</h3>
+                        <div id="energy300Loading" align="center">
+                            <i class="fa fa-refresh fa-spin fa-5x"></i>
+                        </div>
+                        <image src="" id="energy300Img" style="display: 'none'" border="0"  width="100%">
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-md-12 well">
+                        <div class="row">
+                            <div class="col-md-3">Segregation Coefficient:</div>
+                            <div class="col-md-3"><kbd>{{ sc }}</kbd></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">Concentration:</div>
+                            <div class="col-md-3"><kbd>{{ c }}</kbd></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">Well Length:</div>
+                            <div class="col-md-3"><kbd>{{ wl }} &#8491;</kbd></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">Right Barrier Length:</div>
+                            <div class="col-md-3"><kbd>{{ rbl }} &#8491;</kbd></div>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    var imageInside = document.getElementById('concentrationInsideImg');
+                    var downloadingImageInside = new Image();
+                    downloadingImageInside.src = "/muraki_graph/?sc={{ sc }}&c={{ c }}&wa={{ wa }}&wl={{ wl }}&rba={{ rba }}&rbl={{ rbl }}&p=i&temp=0";
+                    downloadingImageInside.onload = function() {
+                        imageInside.src = this.src;
+                        imageInside.style.display = 'block';
+                        document.getElementById('concentrationInsideLoading').style.display = 'none';
+                    };
+                    setTimeout(function() {
+                        var imageOutside = document.getElementById('concentrationOutsideImg');
+                        var downloadingImageOutside = new Image();
+                        downloadingImageOutside.src = "/muraki_graph/?sc={{ sc }}&c={{ c }}&wa={{ wa }}&wl={{ wl }}&rba={{ rba }}&rbl={{ rbl }}&p=o&temp=0";
+                        downloadingImageOutside.onload = function() {
+                            imageOutside.src = this.src;
+                            imageOutside.style.display = 'block';
+                            document.getElementById('concentrationOutsideLoading').style.display = 'none';
+                        };
+                    }, 3000);
+                    setTimeout(function() {
+                        var imageE2 = document.getElementById('energy2Img');
+                        var downloadingEnergy2 = new Image();
+                        downloadingEnergy2.src = "/muraki_graph/?sc={{ sc }}&c={{ c }}&wa={{ wa }}&wl={{ wl }}&rba={{ rba }}&rbl={{ rbl }}&p=i&temp=2";
+                        downloadingEnergy2.onload = function() {
+                            imageE2.src = this.src;
+                            imageE2.style.display = 'block';
+                            document.getElementById('energy2Loading').style.display = 'none';
+                        };
+                    }, 5000);
+                    setTimeout(function() {
+                        var imageE77 = document.getElementById('energy77Img');
+                        var downloadingEnergy77 = new Image();
+                        downloadingEnergy77.src = "/muraki_graph/?sc={{ sc }}&c={{ c }}&wa={{ wa }}&wl={{ wl }}&rba={{ rba }}&rbl={{ rbl }}&p=i&temp=77";
+                        downloadingEnergy77.onload = function() {
+                            imageE77.src = this.src;
+                            imageE77.style.display = 'block';
+                            document.getElementById('energy77Loading').style.display = 'none';
+                        };
+                    }, 7000);
+                    setTimeout(function() {
+                        var imageE300 = document.getElementById('energy300Img');
+                        var downloadingEnergy300 = new Image();
+                        downloadingEnergy300.src = "/muraki_graph/?sc={{ sc }}&c={{ c }}&wa={{ wa }}&wl={{ wl }}&rba={{ rba }}&rbl={{ rbl }}&p=i&temp=300";
+                        downloadingEnergy300.onload = function() {
+                            imageE300.src = this.src;
+                            imageE300.style.display = 'block';
+                            document.getElementById('energy300Loading').style.display = 'none';
+                        };
+                    }, 9000);
+                </script>
+            {% endif %}
+        </div>
+    </div>
+    <hr>
+    <h2>Muraki's Equations</h2>
+    <div class="row">
+        <div class="col-md-10">
+            $$x_n = x_0 \times (1 + R^n), 1 \le n \le N$$
+            $$x_n = x_0 \times (1 + R^n) \times R^{n-N}, n \gt N$$
+        </div>
+        <div class="col-md-2">
+            $$(1)$$
+            $$(2)$$
+        </div>
+    </div>
+{% endblock %}
